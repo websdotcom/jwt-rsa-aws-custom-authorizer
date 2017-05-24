@@ -53,21 +53,6 @@ You will need to set:
 
 You can obtain the API's identifier from under your API [APIs section in Auth0 Management console](https://manage.auth0.com/#/apis).
 
-### policyDocument.json
-
-Copy policyDocument.json.sample to policyDocument.json
-
-This AWS Policy document is returned by the authorizer and is the permission granted to the invoke of the API Gateway.
-
-You will need to edit it to give sufficient access for all the API Gateway functions it will use
-
-The general form an API Gateway ARN is:
-
-    "arn:aws:execute-api:<regionId>:<accountId>:<apiId>/<stage>/<method>/<resourcePath>"
-
-To grant access to ALL your API Gateways you can use:
-
-    "arn:aws:execute-api:*"
 
 ## Local testing
 
