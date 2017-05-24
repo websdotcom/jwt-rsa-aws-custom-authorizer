@@ -1,6 +1,6 @@
 # lambda-auth0-authorizer for RS256 Tokens ( Asymmetric)
 
-An AWS Custom Authorizer for AWS API Gateway that support Auth0 RS256 Bearer tokens.
+An AWS Custom Authorizer for AWS API Gateway that support RS256 Bearer tokens.
 
 ## About
 
@@ -18,21 +18,10 @@ a new feature for API Gateway -
 This allows a Lambda function to be invoked prior to an API Gateway execution to perform authentication and authorization of the request and caching of the result.
 This code can then be isolated to a single function rather than replicated across every backend Lambda function.
 
-### What is Auth0?
-Auth0 is a 3rd party single-sign on service that provides single sign-on services, abstracting various login and identity services.
-Auth0 offers a number of SDKs as well as integrations with AWS.
 
-### What is lambda-auth0-authorizer?
+### What is lambda-jwks-jwt-authorizer?
 
-This package gives you the code for a Custom Authorizer that will, with a little configuration, perform Auth0 authentication on API Gateway requests.
-
-### What alternatives are there to this lambda-auth0-authorizer?
-
-Auth0 uses JWTs. There are several Custom Authorizers for JWTs:
-* https://github.com/byu-oit-appdev/aws-jwt-auth
-* https://github.com/kopertop/lambda-jwt
-
-
+This package gives you the code for a Custom Authorizer that will, with a little configuration, perform authentication on API Gateway requests. It validates the RS* token in the header using the public key of the token issuer
 
 ## Configuration
 
@@ -48,17 +37,18 @@ Values specified in this file will set the corresponding environment variables.
 
 You will need to set:
 
-    AUTH0_DOMAIN=mydomain.auth0.com
-    AUDIENCE=<Your API's Identifier from the Auth0 Management console>
+    JWKS_URI=<url_for_the_jwks_endpoint>
+    AUDIENCE=<api_audience>
+    TOKEN_ISSUER=<token_issuer>
 
-You can obtain the API's identifier from under your API [APIs section in Auth0 Management console](https://manage.auth0.com/#/apis).
-
+If you are using Auth0 as the Authorization server you can obtain the API's identifier from under your API [APIs section in Auth0 Management console](https://manage.auth0.com/#/apis).
 
 ## Local testing
 
 ### Bearer token
 
-You will need to obtain a test Access Token. This is the access_token that is provided by a successful Auth0 authentication when also including an audience for an API. See https://auth0.com/docs/tokens/access-token#how-to-get-an-access-token for instructions on how to get an access token
+You will need to obtain a test Access Token. This is the access_token that is provided by a successful authentication when also including an audience for an API. 
+For Auth0 see details at https://auth0.com/docs/tokens/access-token#how-to-get-an-access-token for instructions on how to get an access token
 
 ### event.json
 
@@ -75,7 +65,6 @@ A successful run will look something like:
 
     $ npm test                                                                                                               
 
-    > lambda-auth0-authenticator@0.0.2 test /Users/pushpabrol/pushp/test
     > lambda-local --timeout 300 --lambdapath index.js --eventpath event.json
 
     Logs
@@ -90,7 +79,7 @@ A successful run will look something like:
     Message
     ------
     {
-        "principalId": "auth0|user_id",
+        "principalId": "user_id",
         "policyDocument": {
             "Version": "2012-10-17",
             "Statement": [
@@ -114,17 +103,17 @@ The Message is the authorization data that the Lambda function returns to API Ga
 
 ### Create bundle
 
-You can create the bundle using `npm run zip`. This creates a lambda-auth0-authorizer.zip deployment package with all the source, configuration and node modules AWS Lambda needs.
+You can create the bundle using `npm run zip`. This creates a lambda-jwks-jwt-authorizer.zip deployment package with all the source, configuration and node modules AWS Lambda needs.
 
 ### Create Lambda function
 
 From the AWS console https://console.aws.amazon.com/lambda/home#/create?step=2
 
-* Name : auth0_authorizer
-* Description: Auth0 authorizer for API Gateway
+* Name : jwt_rsa_authorizer
+* Description: JWT RSA authorizer for API Gateway
 * Runtime: Node.js 4.3
 * Code entry type: Upload a .ZIP file
-* Upload : < select lambda-auth0-authorizer.zip we created in the previous step >
+* Upload : < select lambda-jwks-jwt-authorizer.zip we created in the previous step >
 * Handler : index.handler
 * Role :  Basic execution role
 * Memory (MB) : 128
@@ -193,7 +182,7 @@ Open your API, or Create a new one.
 
 In the left panel, under your API name, click on **Custom Authorizers**. Click on **Create**
 
-* Name : auth0_authorizer
+* Name : jwt_rsa_authorizer
 * Lambda region : < from previous step >
 * Execution role : < the ARN of the Role we created in the previous step > 
 * Identity token source : method.request.header.Authorization
@@ -239,7 +228,7 @@ Under the Resource tree, select one of your Methods (POST, GET etc.)
 
 Select **Method Request**. Under **Authorization Settings** change:
 
-* Authorizer : auth0_authorizer
+* Authorizer : jwt_rsa_authorizer
 
 Make sure that:
 
