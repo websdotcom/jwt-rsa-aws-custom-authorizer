@@ -22,7 +22,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jghaines/lambda-auth0-authorizer.git"
+    "url": "git+https://github.com/pushpabrol/lambda-jwt-rsa-authorizer.git"
   },
   "keywords": [
     "aws",
@@ -33,7 +33,7 @@
     "lambda"
   ],
   "bugs": {
-    "url": "https://github.com/jghaines/lambda-auth0-authorizer/issues"
+    "url": "https://github.com/pushpabrol/lambda-jwt-rsa-authorizer/issues"
   },
-  "homepage": "https://github.com/jghaines/lambda-auth0-authorizer#readme"
+  "homepage": "https://github.com/pushpabrol/lambda-jwt-rsa-authorizer#readme"
 }
