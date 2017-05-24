@@ -1,6 +1,6 @@
-# lambda-auth0-authorizer
+# lambda-auth0-authorizer for RS256 Tokens ( Asymmetric)
 
-An AWS Custom Authorizer for AWS API Gateway that support Auth0 Bearer tokens.
+An AWS Custom Authorizer for AWS API Gateway that support Auth0 RS256 Bearer tokens.
 
 ## About
 
@@ -48,10 +48,10 @@ Values specified in this file will set the corresponding environment variables.
 
 You will need to set:
 
-    AUTH0_DOMAIN=mydomain.auth0.com
-    AUTH0_CLIENTID=MyClientId
+AUTH0_DOMAIN=mydomain.auth0.com
+AUDIENCE=<Your API's Identifier from the Auth0 Management console>
 
-You can obtain these values from your Auth0 [Application settings](https://manage.auth0.com/#/applications).
+You can obtain the API's identifier from under your API [APIs section in Auth0 Management console](https://manage.auth0.com/#/apis).
 
 ### policyDocument.json
 
@@ -69,44 +69,18 @@ To grant access to ALL your API Gateways you can use:
 
     "arn:aws:execute-api:*"
 
-### dynamo.json
-
-lambda-auth0-autorizer can optionally store the auth0 user info into an AWS DynamoDB table.
-
-To do this copy dynamo.json.sample to dynamo.json. If present in the deployment bundle, it will be used as the template for the DynamoDoc Put operation. 
-
-You should only change: 
-* The value for "TableName", e.g. "Users"
-* The key of the first "Items" value, which is the HashKey of that table, e.g. "userId"
-
 ## Local testing
 
 ### Bearer token
 
-You will need to obtain a test Bearer Token.
-This is the [id_token](https://auth0.com/docs/tokens/id_token) that is provided by a successful Auth0 authentication.
-The id_token is valid for 10 hours (36000 seconds) by default.
-
-You can check your id_token by passing it to Auth0's API test interface:  
-https://auth0.com/docs/auth-api#post--tokeninfo
-
-lamda-auth0-authorizer also will also auto-detect and support Auth0's depcreated 16-character v1 [access_token](https://auth0.com/docs/tokens/access_token).
+You will need to obtain a test Access Token. This is the access_token that is provided by a successful Auth0 authentication when also including an audience for an API. See https://auth0.com/docs/tokens/access-token#how-to-get-an-access-token for instructions on how to get an access token
 
 ### event.json
 
-Copy event.json.sample to event.json. Provide the id_token from the previous step. 
+Copy event.json.sample to event.json. Provide the access_token from the previous step. 
 
-    "authorizationToken" : "Bearer <id_token>",
+    "authorizationToken" : "Bearer <access_token>",
     
-### Local DynamoDB connection testing
-
-If you are using the DynamoDB configuration described above, check that your local environment is configured for DynamoDB
-
-Using the [AWS CLI](https://aws.amazon.com/cli/), run the following command with the <table_name> you configured in dynamo.json. 
-
-    $ aws dynamodb describe-table --table-name <table_name>
-
-The result should run without error and show the same value for TableName.KeySchema.AttributeName which the table key configured in dynamo.json. 
 
 ### lambda-local
 
@@ -114,22 +88,24 @@ Run `npm test` to use lambda-local test harness
 
 A successful run will look something like:
 
-    $ npm test
+    $ npm test                                                                                                               
 
-    > lambda-auth0-authenticator@0.0.1 test ~/lambda-auth0-authorizer
+    > lambda-auth0-authenticator@0.0.2 test /Users/pushpabrol/pushp/test
     > lambda-local --timeout 300 --lambdapath index.js --eventpath event.json
 
     Logs
     ----
-    START RequestId: bcb21d17-c3f8-2299-58d9-0400adcfe921
-    Auth0 authentication successful for user_id oauth|1234567890
+    START RequestId: fe210d1c-12de-0bff-dd0a-c3ac3e959520
+    { type: 'TOKEN',
+      authorizationToken: 'Bearer eyJ0eXA...M2pdKi79742x4xtkLm6qNSdDYDEub37AI2h_86ifdIimY4dAOQ',
+      methodArn: 'arn:aws:execute-api:us-east-1:1234567890:apiId/stage/method/resourcePath' }
     END
 
 
     Message
     ------
     {
-        "principalId": "oauth|1234567890",
+        "principalId": "auth0|user_id",
         "policyDocument": {
             "Version": "2012-10-17",
             "Statement": [
@@ -165,8 +141,7 @@ From the AWS console https://console.aws.amazon.com/lambda/home#/create?step=2
 * Code entry type: Upload a .ZIP file
 * Upload : < select lambda-auth0-authorizer.zip we created in the previous step >
 * Handler : index.handler
-* Role :  Basic with DynamoDB
-  * If you aren't using DynamoDB (see above), you can also pick Basic execution role
+* Role :  Basic execution role
 * Memory (MB) : 128
 * Timeout : 30 seconds
 * VPC : No VPC
@@ -177,11 +152,11 @@ Click Next and Create
 
 In the Lambda console, select Actions -> Configure Test event.
 
-Use the following JSON as the test event data. The id_token is the same format we used in event.json above. Click Save and Test to run the Lambda.
+Use the following JSON as the test event data. The access_token is the same format we used in event.json above. Click Save and Test to run the Lambda.
 
     {
         "type": "TOKEN",
-        "authorizationToken": "Bearer <id_token>",
+        "authorizationToken": "Bearer <access_token>",
         "methodArn":"arn:aws:execute-api:us-east-1:1234567890:apiId/stage/method/resourcePath"
     }
 
@@ -247,9 +222,9 @@ Click **Create**
 
 You can test the authorizer by supplying an Identity token and clicking **Test**
 
-The id_token is the same format we used in event.json above.
+The access_token is the same format we used in event.json above.
 
-    Bearer <id_token>
+    Bearer <access_token>
   
 A successful test will look something like:
 
@@ -304,13 +279,13 @@ You can use Postman to test the REST API
  * The base URL you can see in the Stages section of the API
  * Append the Resource name to get the full URL  
 * Header - add an Authorization key
- * Authorization : Bearer <id_token>
+ * Authorization : Bearer <access_token>
 
 #### With curl from the command line
 
-    $ curl -X POST <url> -H 'Authorization: Bearer <id_token>'
+    $ curl -X POST <url> -H 'Authorization: Bearer <access_token>'
  
 #### In (modern) browsers console with fetch
 
-    fetch( '<url>', { method: 'POST', headers: { Authorization : 'Bearer <id_token>' }}).then(response => { console.log( response );});
+    fetch( '<url>', { method: 'POST', headers: { Authorization : 'Bearer <access_token>' }}).then(response => { console.log( response );});
     
