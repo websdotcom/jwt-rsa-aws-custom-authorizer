@@ -52,6 +52,12 @@ module.exports.authenticate = function (params, cb) {
     var decoded = jwt.decode(token, { complete: true });
     var kid = decoded.header.kid;
     client.getSigningKey(kid, function (err, key) {
+        if(err)
+        {
+             cb(err);
+        }
+        else 
+        {
         var signingKey = key.publicKey || key.rsaPublicKey;
         jwt.verify(token, signingKey, { audience: process.env.AUDIENCE, issuer: process.env.TOKEN_ISSUER },
             function (err, decoded) {
@@ -70,6 +76,7 @@ module.exports.authenticate = function (params, cb) {
                     });
                 }
             });
+    }
 
     });
 
