@@ -51,7 +51,7 @@ You will need to set:
 AUTH0_DOMAIN=mydomain.auth0.com
 AUDIENCE=<Your API's Identifier from the Auth0 Management console>
 
-You can obtain these values from your Auth0 [Application settings](https://manage.auth0.com/#/applications).
+You can obtain the API's identifier from under your API [APIs section in Auth0 Management console](https://manage.auth0.com/#/apis).
 
 ### policyDocument.json
 
