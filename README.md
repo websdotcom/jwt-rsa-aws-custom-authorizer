@@ -1,6 +1,6 @@
-# lambda-auth0-authorizer for RS256 Tokens ( Asymmetric)
+# lambda-jwt-rsa-authorizer custom authorizer for API Gateway ( Asymmetric)
 
-An AWS Custom Authorizer for AWS API Gateway that support RS256 Bearer tokens.
+An AWS Custom Authorizer for AWS API Gateway that supports RS256 Bearer tokens.
 
 ## About
 
@@ -19,7 +19,7 @@ This allows a Lambda function to be invoked prior to an API Gateway execution to
 This code can then be isolated to a single function rather than replicated across every backend Lambda function.
 
 
-### What is lambda-jwks-jwt-authorizer?
+### What is lambda-jwt-rsa-authorizer?
 
 This package gives you the code for a Custom Authorizer that will, with a little configuration, perform authentication on API Gateway requests. It validates the RS* token in the header using the public key of the token issuer
 
@@ -103,7 +103,7 @@ The Message is the authorization data that the Lambda function returns to API Ga
 
 ### Create bundle
 
-You can create the bundle using `npm run zip`. This creates a lambda-jwks-jwt-authorizer.zip deployment package with all the source, configuration and node modules AWS Lambda needs.
+You can create the bundle using `npm run zip`. This creates a lambda-jwt-rsa-authorizer.zip deployment package with all the source, configuration and node modules AWS Lambda needs.
 
 ### Create Lambda function
 
@@ -113,7 +113,7 @@ From the AWS console https://console.aws.amazon.com/lambda/home#/create?step=2
 * Description: JWT RSA authorizer for API Gateway
 * Runtime: Node.js 4.3
 * Code entry type: Upload a .ZIP file
-* Upload : < select lambda-jwks-jwt-authorizer.zip we created in the previous step >
+* Upload : < select lambda-jwt-rsa-authorizer.zip we created in the previous step >
 * Handler : index.handler
 * Role :  Basic execution role
 * Memory (MB) : 128
