@@ -4,7 +4,6 @@ require('dotenv').config();
 var jwksClient = require('jwks-rsa');
 var jwt = require('jsonwebtoken');
 
-
 var getPolicyDocument = function (effect, resource) {
 
     var policyDocument = {};
@@ -16,10 +15,7 @@ var getPolicyDocument = function (effect, resource) {
     statementOne.Resource = resource;
     policyDocument.Statement[0] = statementOne;
     return policyDocument;
-
 }
-
-
 
 
 // extract and return the Bearer Token from the Lambda event parameters
@@ -50,14 +46,14 @@ module.exports.authenticate = function (params, cb) {
         cache: true,
         rateLimit: true,
         jwksRequestsPerMinute: 10, // Default value
-        jwksUri: 'https://' + process.env.AUTH0_DOMAIN + '/.well-known/jwks.json'
+        jwksUri: process.env.JWKS_URI
     });
 
     var decoded = jwt.decode(token, { complete: true });
     var kid = decoded.header.kid;
     client.getSigningKey(kid, function (err, key) {
         var signingKey = key.publicKey || key.rsaPublicKey;
-        jwt.verify(token, signingKey, { audience: process.env.AUDIENCE, issuer: 'https://' + process.env.AUTH0_DOMAIN + '/' },
+        jwt.verify(token, signingKey, { audience: process.env.AUDIENCE, issuer: process.env.TOKEN_ISSUER },
             function (err, decoded) {
                 if (err) {
                     cb(err);

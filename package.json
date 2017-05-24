@@ -1,11 +1,11 @@
 {
   "name": "lambda-auth0-authenticator",
   "version": "0.0.2",
-  "description": "An AWS Lambda function to provide an Auth0 Custom Authenticator for AWS API Gateway",
+  "description": "An AWS Lambda function to provide a Custom Authenticator for AWS API Gateway that verifies RS* signed tokens",
   "main": "index.js",
   "scripts": {
     "test": "./node_modules/.bin/lambda-local --timeout 300 --lambdapath index.js --eventpath event.json",
-    "zip": "rm -f lambda-auth0-authorizer.zip ; zip lambda-auth0-authorizer.zip -r *.js *.json .env node_modules/"
+    "zip": "rm -f lambda-auth0-authorizer.zip ; zip lambda-jwks-jwt-authorizer.zip -r *.js *.json .env node_modules/"
   },
   "author": "Jason Haines",
   "license": "Apache-2.0",
