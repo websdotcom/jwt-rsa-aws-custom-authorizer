@@ -64,7 +64,7 @@ client.getSigningKey(kid, function(err, key) {
   var signingKey = key.publicKey || key.rsaPublicKey;
 
 
-  jwt.verify(token, signingKey, { audience: process.env.AUDIENCE }, 
+  jwt.verify(token, signingKey, { audience: process.env.AUDIENCE, issuer: 'https://' + process.env.AUTH0_DOMAIN + '/' }, 
   function(err, decoded) {
   if(err){
     cb(err);
