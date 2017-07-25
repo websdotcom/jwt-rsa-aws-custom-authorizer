@@ -37,25 +37,27 @@ npm install
 
 This is a prerequisite for deployment as AWS Lambda requires these files to be included in a bundle (a special ZIP file).
 
-Create a `.env` file by copying the sample:
+## Local testing
+
+Configure the local environment with a `.env` file by copying the sample:
 
 ```bash
-cp ./.env.sample ./.env
+cp .env.sample .env
 ```
+
+### Environment Variables
 
 Modify the `.env`:
 * `TOKEN_ISSUER`: The issuer of the token. If you're using Auth0 as the token issuer, this would be: `https://your-tenant.auth0.com/`
 * `JWKS_URI`: This is the URL of the associated JWKS endpoint. If you are using Auth0 as the token issuer, this would be: `https://your-tenant.auth0.com/.well-known/jwks.json`
 * `AUDIENCE`: This is the required audience of the token. If you are using Auth0 as the Authorization Server, the audience value is the same thing as your API **Identifier** for the specific API in your [APIs section]((https://manage.auth0.com/#/apis)).
 
-## Local testing
-
 You can test the custom authorizer locally. You just need to obtain a valid JWT access token to perform the test. If you're using Auth0, see [these instructions](https://auth0.com/docs/tokens/access-token#how-to-get-an-access-token) on how to obtain one.
 
 With a valid token, now you just need to create a local `event.json` file that contains it. Start by copying the sample file:
 
 ```bash
-cp ./event.json.sample ./event.json
+cp event.json.sample event.json
 ```
 
 Then replace the `ACCESS_TOKEN` text in that file with the JWT you obtained in the previous step.
@@ -183,6 +185,7 @@ Now we can finally create the lamda function itself in AWS. Start by going to [c
 * _Lambda function code_
     * Code entry type: `Update a .ZIP file`
     * Function package: (upload the `custom-authorizer.zip` file created earlier)
+    * Environment variables: (create variables with the same _Key_ and _Value_ as the list in the [Environment Variables](#environment-variables) section above)
 * _Lambda function handler and role_
     * Handler: `index.handler` (default)
     * Role: `Choose an existing role`
