@@ -1,6 +1,6 @@
 'use strict';
 
-require('dotenv').config();
+require('dotenv').config({ silent: true });
 var jwksClient = require('jwks-rsa');
 var jwt = require('jsonwebtoken');
 
