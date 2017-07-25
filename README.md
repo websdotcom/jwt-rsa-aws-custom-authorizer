@@ -1,14 +1,14 @@
 # AWS API Gateway Custom Authorizer for RS256 JWTs
 
 An AWS API Gateway [Custom Authorizer](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) that authorizes API requests by requiring 
-that the OAuth2 [bearer token](https://tools.ietf.org/html/rfc6750) is a JWT that can be validated using the RS256 (asymetric) algorithm with a public key that is obtained from a [JWKS](https://tools.ietf.org/html/rfc7517) endpoint.
+that the OAuth2 [bearer token](https://tools.ietf.org/html/rfc6750) is a JWT that can be validated using the RS256 (asymmetric) algorithm with a public key that is obtained from a [JWKS](https://tools.ietf.org/html/rfc7517) endpoint.
 
 ## About
 
 ### What is AWS API Gateway?
 
 API Gateway is an AWS service that allows for the definition, configuration and deployment of REST API interfaces.
-These interfaces can connect to a number of backend systems.
+These interfaces can connect to a number of back-end systems.
 One popular use case is to provide an interface to AWS Lambda functions to deliver a so-called 'serverless' architecture.
 
 ### What are "Custom Authorizers"?
@@ -102,7 +102,7 @@ Message
 }
 ```
 
-An `Action` of `Allow` means the authorizer woulld have allowed the associated API call to the API Gateway if it contained your token.
+An `Action` of `Allow` means the authorizer would have allowed the associated API call to the API Gateway if it contained your token.
 
 ## Deployment
 
