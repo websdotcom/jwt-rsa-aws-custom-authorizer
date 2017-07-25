@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "./node_modules/.bin/lambda-local --timeout 300 --lambdapath index.js --eventpath event.json",
-    "zip": "rm -f lambda-auth0-authorizer.zip ; zip lambda-jwt-rsa-authorizer.zip -r *.js *.json .env node_modules/"
+    "bundle": "rm -f custom-authorizer.zip ; zip custom-authorizer.zip -r *.js *.json .env node_modules/"
   },
   "author": "Jason Haines",
   "license": "Apache-2.0",

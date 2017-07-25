@@ -1,162 +1,159 @@
-# lambda-jwt-rsa-authorizer custom authorizer for API Gateway ( Asymmetric)
+# AWS API Gateway Custom Authorizer for RS256 JWTs
 
-An AWS Custom Authorizer for AWS API Gateway that supports RS256 Bearer tokens.
+An AWS API Gateway [Custom Authorizer](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) that authorizes API requests by requiring 
+that the OAuth2 [bearer token](https://tools.ietf.org/html/rfc6750) is a JWT that can be validated using the RS256 (asymetric) algorithm with a public key that is obtained from a [JWKS](https://tools.ietf.org/html/rfc7517) endpoint.
 
 ## About
 
 ### What is AWS API Gateway?
+
 API Gateway is an AWS service that allows for the definition, configuration and deployment of REST API interfaces.
 These interfaces can connect to a number of backend systems.
 One popular use case is to provide an interface to AWS Lambda functions to deliver a so-called 'serverless' architecture.
 
-### What are Custom Authorizers?
+### What are "Custom Authorizers"?
+
 In February 2016 Amazon 
 [announced](https://aws.amazon.com/blogs/compute/introducing-custom-authorizers-in-amazon-api-gateway/)
 a new feature for API Gateway -
-[Custom Authorizers](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html).
+[Custom Authorizers](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html). This allows a Lambda function to be invoked prior to an API Gateway execution to perform custom authorization of the request, rather than using AWS's built-in authorization. This code can then be isolated to a single centralized Lambda function rather than replicated across every backend Lambda function.
 
-This allows a Lambda function to be invoked prior to an API Gateway execution to perform authentication and authorization of the request and caching of the result.
-This code can then be isolated to a single function rather than replicated across every backend Lambda function.
+### What does this Custom Authorizer do?
 
+This package gives you the code for a custom authorizer that will, with a little configuration, perform authorization on AWS API Gateway requests via the following:
 
-### What is lambda-jwt-rsa-authorizer?
+* It confirms that an OAuth2 bearer token has been passed via the `Authorization` header.
+* It confirms that the token is a JWT that has been signed using the RS256 algorithm with a specific public key
+* It obtains the public key by inspecting the configuration returned by a configured JWKS endpoint
+* It also ensures that the JWT has the required Issuer (`iss` claim) and Audience (`aud` claim)
 
-This package gives you the code for a Custom Authorizer that will, with a little configuration, perform authentication on API Gateway requests. It validates the RS* token in the header using the public key of the token issuer
+## Setup
 
-## Configuration
+Install Node Packages:
 
-### node modules
+```bash
+npm install
+```
 
-Run `npm install` to download all the dependent modules. This is a prerequisite for deployment as AWS Lambda requires these files to be included in the bundle.
+This is a prerequisite for deployment as AWS Lambda requires these files to be included in a bundle (a special ZIP file).
 
-### .env
+Create a `.env` file by copying the sample:
 
-Copy .env.sample to .env
+```bash
+cp ./.env.sample ./.env
+```
 
-Values specified in this file will set the corresponding environment variables.
-
-You will need to set:
-
-    JWKS_URI=<url_for_the_jwks_endpoint>
-    AUDIENCE=<api_audience>
-    TOKEN_ISSUER=<token_issuer>
-
-If you are using Auth0 as the Authorization server you can obtain the API's identifier from under your API [APIs section in Auth0 Management console](https://manage.auth0.com/#/apis).
+Modify the `.env`:
+* `TOKEN_ISSUER`: The issuer of the token. If you're using Auth0 as the token issuer, this would be: `https://your-tenant.auth0.com/`
+* `JWKS_URI`: This is the URL of the associated JWKS endpoint. If you are using Auth0 as the token issuer, this would be: `https://your-tenant.auth0.com/.well-known/jwks.json`
+* `AUDIENCE`: This is the required audience of the token. If you are using Auth0 as the Authorization Server, the audience value is the same thing as your API **Identifier** for the specific API in your [APIs section]((https://manage.auth0.com/#/apis)).
 
 ## Local testing
 
-### Bearer token
+You can test the custom authorizer locally. You just need to obtain a valid JWT access token to perform the test. If you're using Auth0, see [these instructions](https://auth0.com/docs/tokens/access-token#how-to-get-an-access-token) on how to obtain one.
 
-You will need to obtain a test Access Token. This is the access_token that is provided by a successful authentication when also including an audience for an API. 
-For Auth0 see details at https://auth0.com/docs/tokens/access-token#how-to-get-an-access-token for instructions on how to get an access token
+With a valid token, now you just need to create a local `event.json` file that contains it. Start by copying the sample file:
 
-### event.json
+```bash
+cp ./event.json.sample ./event.json
+```
 
-Copy event.json.sample to event.json. Provide the access_token from the previous step. 
+Then replace the `ACCESS_TOKEN` text in that file with the JWT you obtained in the previous step.
 
-    "authorizationToken" : "Bearer <access_token>",
-    
+Finally, perform the test:
 
-### lambda-local
+```bash
+npm test
+```
 
-Run `npm test` to use lambda-local test harness 
+This uses the [lambda-local](https://www.npmjs.com/package/lambda-local) package to test the authorizer with your token. A successful test run will look something like this:
 
-A successful run will look something like:
+```
+> lambda-local --timeout 300 --lambdapath index.js --eventpath event.json
 
-    $ npm test                                                                                                               
-
-    > lambda-local --timeout 300 --lambdapath index.js --eventpath event.json
-
-    Logs
-    ----
-    START RequestId: fe210d1c-12de-0bff-dd0a-c3ac3e959520
-    { type: 'TOKEN',
-      authorizationToken: 'Bearer eyJ0eXA...M2pdKi79742x4xtkLm6qNSdDYDEub37AI2h_86ifdIimY4dAOQ',
-      methodArn: 'arn:aws:execute-api:us-east-1:1234567890:apiId/stage/method/resourcePath' }
-    END
+Logs
+----
+START RequestId: fe210d1c-12de-0bff-dd0a-c3ac3e959520
+{ type: 'TOKEN',
+    authorizationToken: 'Bearer eyJ0eXA...M2pdKi79742x4xtkLm6qNSdDYDEub37AI2h_86ifdIimY4dAOQ',
+    methodArn: 'arn:aws:execute-api:us-east-1:1234567890:apiId/stage/method/resourcePath' }
+END
 
 
-    Message
-    ------
-    {
-        "principalId": "user_id",
-        "policyDocument": {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Sid": "Stmt1459758003000",
-                    "Effect": "Allow",
-                    "Action": [
-                        "execute-api:Invoke"
-                    ],
-                    "Resource": [
-                        "arn:aws:execute-api:*"
-                    ]
-                }
-            ]
-        }
-    }
-
-The Message is the authorization data that the Lambda function returns to API Gateway.
-
-## Deployment
-
-### Create bundle
-
-You can create the bundle using `npm run zip`. This creates a lambda-jwt-rsa-authorizer.zip deployment package with all the source, configuration and node modules AWS Lambda needs.
-
-### Create Lambda function
-
-From the AWS console https://console.aws.amazon.com/lambda/home#/create?step=2
-
-* Name : jwt_rsa_authorizer
-* Description: JWT RSA authorizer for API Gateway
-* Runtime: Node.js 4.3
-* Code entry type: Upload a .ZIP file
-* Upload : < select lambda-jwt-rsa-authorizer.zip we created in the previous step >
-* Handler : index.handler
-* Role :  Basic execution role
-* Memory (MB) : 128
-* Timeout : 30 seconds
-* VPC : No VPC
-
-Click Next and Create
-
-#### Testing Lambda
-
-In the Lambda console, select Actions -> Configure Test event.
-
-Use the following JSON as the test event data. The access_token is the same format we used in event.json above. Click Save and Test to run the Lambda.
-
-    {
-        "type": "TOKEN",
-        "authorizationToken": "Bearer <access_token>",
-        "methodArn":"arn:aws:execute-api:us-east-1:1234567890:apiId/stage/method/resourcePath"
-    }
-
-### Create IAM Role
-
-You will need to create an IAM Role that has permissions to invoke the Lambda function we created above.
-
-That Role will need to have a Policy similar to the following:
-
-    {
+Message
+------
+{
+    "principalId": "user_id",
+    "policyDocument": {
         "Version": "2012-10-17",
         "Statement": [
             {
+                "Sid": "Stmt1459758003000",
                 "Effect": "Allow",
-                "Resource": [
-                    "*"
-                ],
                 "Action": [
-                    "lambda:InvokeFunction"
+                    "execute-api:Invoke"
+                ],
+                "Resource": [
+                    "arn:aws:execute-api:*"
                 ]
             }
         ]
     }
+}
+```
 
-You will also need to set a "Trust Relationship for the role". This will allow the API Gateway permission to assume the role and run the lambda function. The trust relationship can be set in a separate tab in the AWS console. Click the "Edit Trust Relationship button". It should look similar to the following:
+An `Action` of `Allow` means the authorizer woulld have allowed the associated API call to the API Gateway if it contained your token.
 
+## Deployment
+
+Now we're ready to deploy the custom authorizer to an AWS API Gateway.
+
+### Create the lambda bundle
+
+First we need to create a bundle file that we can upload to AWS:
+
+```bash
+npm run bundle
+```
+
+This will generate a local `custom-authorizer.zip` bundle (ZIP file) containing all the source, configuration and node modules an AWS Lambda needs.
+
+### Create the IAM role
+
+Before we can create the Lambda function in AWS that will be used as the custom authorizer, we need to make sure we have an IAM role that has permissions to invoke the Lambda function.
+
+Before we create the role, we need to make sure we have an IAM policy  with the right permissions, which essentially allow for invoking Lambda functions. The policy JSON needs to look like this:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "lambda:InvokeFunction"
+            ],
+            "Resource": [
+                "*"
+            ]
+        }
+    ]
+}
+```
+
+Your AWS account should have an existing policy called `AWSLambdaRole` in the [Policies](https://console.aws.amazon.com/iam/home#/policies) list that has these permissions, so you don't have to create a new policy if you don't want to.
+
+Now in the AWS Console, go to your [IAM Roles](https://console.aws.amazon.com/iam/home#/roles) list and create new role:
+
+1. Click **Create new role**
+2. Under the **AWS Service Role** group, click the **Select** button for the `AWS Lambda` role type
+3. In the **Attach Policy** step, select the `AWSLambdaRole` policy
+4. Provide the role a name. Eg: `Custom-Authorizer-Role`
+5. Select your new role in the role list
+6. Click the **Trust relationships** tab and click the **Edit trust relationship** button
+7. Update the policy document so it has this JSON:
+
+    ```json
     {
       "Version": "2012-10-17",
       "Statement": [
@@ -172,94 +169,168 @@ You will also need to set a "Trust Relationship for the role". This will allow t
         }
       ]
     }
+    ```
 
+8. Make note of the **Role ARN** value, which will be used in a later step
 
-### Configure API Gateway
+### Create the lambda function
 
-From the AWS console https://console.aws.amazon.com/apigateway/home
+Now we can finally create the lamda function itself in AWS. Start by going to [create a new blank function](https://console.aws.amazon.com/lambda/home#/create?step=2), then click **Next**. Your new function will have the following configuration:
 
-Open your API, or Create a new one.
+* Name: `jwtRsaCustomAuthorizer`
+* Description: `JWT RSA Custom Authorizer`
+* Runtime: `Node.js 4.3`
+* _Lambda function code_
+    * Code entry type: `Update a .ZIP file`
+    * Function package: (upload the `custom-authorizer.zip` file created earlier)
+* _Lambda function handler and role_
+    * Handler: `index.handler` (default)
+    * Role: `Choose an existing role`
+    * Existing role: `Custom-Authorizer-Role` (same role created earlier)
+* _Advanced Settings_
+    * Timeout: `30` seconds
 
-In the left panel, under your API name, click on **Custom Authorizers**. Click on **Create**
+Click **Next** and then **Create function** to create the lambda function.
 
-* Name : jwt_rsa_authorizer
-* Lambda region : < from previous step >
-* Execution role : < the ARN of the Role we created in the previous step > 
-* Identity token source : method.request.header.Authorization
-* Token validation expression : ```^Bearer [-0-9a-zA-z\.]*$```
-** Cut-and-paste this regular expression from ^ to $ inclusive
-* Result TTL in seconds : 3600
+### Test the lambda function in AWS
 
-Click **Create**
+1. Make sure your new lamdba function is open in the console, and from the **Actions** menu select `Configure test event`.
 
-### Testing
+2. Copy the contents of your `event.json` file into the **Input test event** JSON.
 
-You can test the authorizer by supplying an Identity token and clicking **Test**
+3. Click **Save and test** to run the lambda.
 
-The access_token is the same format we used in event.json above.
+You should see similar output to what you observed when [testing the lambda locally](#local-testing).
 
-    Bearer <access_token>
+### Configure the Custom Authorizer in the API Gateway
+
+1. In the [AWS API Gateway console](https://console.aws.amazon.com/apigateway/home) open an existing API, or optionally create a **New API**.
+
+2. In the left panel, under your API name, click **Authorizers**.
+
+3. Click **Create** > **Custom Authorizer**
+
+4. Use the following values in the **New Custom Authorizer** form:
+   * Lambda region: (same as lambda function created above)
+   * Lambda function: `jwtRsaCustomAuthorizer`
+   * Authorizer name: `jwt-rsa-custom-authorizer`
+   * Execution role: (**Role ARN** from the [Create the IAM role](#create-the-iam-role) section)
+   * Token validation expression: `^Bearer [-0-9a-zA-z\.]*$`
+   * Result TTL in seconds: `3600`
+
+5. Click **Create**
+
+### Test the Custom Authorizer in the API Gateway
+
+You can then test the new custom authorizer by providing an **Identity Token** and clicking **Test**. The ACCESS_TOKEN is the same format we used in `event.json` above:
+
+```
+Bearer ACCESS_TOKEN
+```
   
 A successful test will look something like:
 
-    Latency: 2270 ms
-    Principal Id: oauth|1234567890
-    Policy
-    {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-            "Sid": "Stmt1459758003000",
-            "Effect": "Allow",
-            "Action": [
-                "execute-api:Invoke"
-            ],
-            "Resource": [
-                "arn:aws:execute-api:*"
-            ]
-            }
+```
+Latency: 2270 ms
+Principal Id: oauth|1234567890
+Policy
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+        "Sid": "Stmt1459758003000",
+        "Effect": "Allow",
+        "Action": [
+            "execute-api:Invoke"
+        ],
+        "Resource": [
+            "arn:aws:execute-api:*"
         ]
-    }
+        }
+    ]
+}
+```
 
-### Configure API Gateway Methods to use the Authorizer
+### Configure API Gateway Resources to use the Custom Authorizer
 
-In the left panel, under your API name, click on **Resources**.
-Under the Resource tree, select one of your Methods (POST, GET etc.)
+1. In the left panel, under your API name, click **Resources**.
 
-Select **Method Request**. Under **Authorization Settings** change:
+2. Under the Resource tree, select a specific resource and one of its Methods (eg. `GET`)
 
-* Authorizer : jwt_rsa_authorizer
+3. Select **Method Request**
 
-Make sure that:
+4. Under the **Settings** section, click the pencil to the right of the **Authorization** and choose the `jwt-rsa-custom-authorizer` Custom Authorizer. Click the checkbox to the right of the drop down to save.
 
-* API Key Required : false
+5. Make sure the **API Key Required** field is set to `false`
 
-Click the tick to save the changes.
-
-### Deploy the API
+### Deploy the API Gateway
 
 You need to Deploy the API to make the changes public.
 
-Select **Action** and **Deploy API**. Select your **Stage**.
+1. Select the **Action** menu and choose **Deploy API**
 
-### Test your endpoint remotely
+2. When prompted for a stage, select or create a new stage (eg. `dev`).
+
+3. In the stage, make note of the **Invoke URL**
+
+### Test your API Gateway endpoint remotely
+
+In the examples below:
+* `INVOKE_URL` is the **Invoke URL** from the [Deploy the API Gateway](#deploy-the-api-gateway) section above
+* `ACCESS_TOKEN` is the token in the `event.json` file
+* `/your/resource` is the resource you secured in AWS API Gateway
 
 #### With Postman
 
 You can use Postman to test the REST API
 
-* Method: < matching the Method in API Gateway > 
-* URL `https://<api-id>.execute-api.<region>.amazonaws.com/<stage>/<resource>`
- * The base URL you can see in the Stages section of the API
- * Append the Resource name to get the full URL  
-* Header - add an Authorization key
- * Authorization : Bearer <access_token>
+* Method: (matching the Method in API Gateway, eg. `GET`)
+* URL: `INVOKE_URL/your/resource`
+* Headers tab: Add an `Authorization` header with the value `Bearer ACCESS_TOKEN`
 
 #### With curl from the command line
 
-    $ curl -X POST <url> -H 'Authorization: Bearer <access_token>'
- 
+```
+curl -i "INVOKE_URL/your/resource" \
+  -X GET \
+  -H 'Authorization: Bearer ACCESS_TOKEN'
+```
+
+The above command is performed using the `GET` method.
+
 #### In (modern) browsers console with fetch
 
-    fetch( '<url>', { method: 'POST', headers: { Authorization : 'Bearer <access_token>' }}).then(response => { console.log( response );});
-    
+```
+fetch( 'INVOKE_URL/your/resource', { method: 'GET', headers: { Authorization : 'Bearer ACCESS_TOKEN' }}).then(response => { console.log( response );});
+```    
+
+
+---
+
+## What is Auth0?
+
+Auth0 helps you to:
+
+* Add authentication with [multiple authentication sources](https://docs.auth0.com/identityproviders), either social like **Google, Facebook, Microsoft Account, LinkedIn, GitHub, Twitter, Box, Salesforce, amongst others**, or enterprise identity systems like **Windows Azure AD, Google Apps, Active Directory, ADFS or any SAML Identity Provider**.
+* Add authentication through more traditional **[username/password databases](https://docs.auth0.com/mysql-connection-tutorial)**.
+* Add support for **[linking different user accounts](https://docs.auth0.com/link-accounts)** with the same user.
+* Support for generating signed [Json Web Tokens](https://docs.auth0.com/jwt) to call your APIs and **flow the user identity** securely.
+* Analytics of how, when and where users are logging in.
+* Pull data from other sources and add it to the user profile, through [JavaScript rules](https://docs.auth0.com/rules).
+
+## Create a free account in Auth0
+
+1. Go to [Auth0](https://auth0.com) and click Sign Up.
+2. Use Google, GitHub or Microsoft Account to login.
+
+## Issue Reporting
+
+If you have found a bug or if you have a feature request, please report them at this repository issues section. Please do not report security vulnerabilities on the public GitHub issue tracker. The [Responsible Disclosure Program](https://auth0.com/whitehat) details the procedure for disclosing security issues.
+
+## Author
+
+[Auth0](auth0.com)
+
+## License
+
+This project is licensed under the MIT license. See the [LICENSE](LICENSE.txt) file for more info.
