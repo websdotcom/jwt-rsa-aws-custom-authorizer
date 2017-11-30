@@ -218,7 +218,7 @@ You should see similar output to what you observed when [testing the lambda loca
    * Lambda function: `jwtRsaCustomAuthorizer`
    * Authorizer name: `jwt-rsa-custom-authorizer`
    * Execution role: (**Role ARN** from the [Create the IAM role](#create-the-iam-role) section)
-   * Token validation expression: `^Bearer [-0-9a-zA-z\.]*$`
+   * Token validation expression: `^Bearer [-0-9a-zA-Z\._]*$`
    * Result TTL in seconds: `3600`
 
 5. Click **Create**
